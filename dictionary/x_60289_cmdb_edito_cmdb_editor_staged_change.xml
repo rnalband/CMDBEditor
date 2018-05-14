@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<database>
+    <element label="CMDB Editor Staged Change" max_length="40" name="x_60289_cmdb_edito_cmdb_editor_staged_change" type="collection">
+        <element choice="3" default="not_requested" label="Approval" max_length="40" name="approval" type="string">
+            <choice>
+                <element label="Requested" sequence="0" value="requeted"/>
+                <element label="Approved" sequence="1" value="approved"/>
+                <element label="Rejected" sequence="2" value="rejected"/>
+                <element label="Not Requested" sequence="3" value="not_requested"/>
+            </choice>
+        </element>
+        <element label="CMDB Editor Configuration" max_length="32" name="cmdb_editor_configuration" reference="x_60289_cmdb_edito_cmdb_editor_configuration" type="reference"/>
+        <element label="Committed" max_length="40" name="committed" read_only="true" type="boolean"/>
+        <element display="true" label="Configuration Item" mandatory="true" max_length="32" name="configuration_item" reference="cmdb" type="reference"/>
+        <element label="Staged Changes" mandatory="true" max_length="8000" name="staged_changes" type="string"/>
+        <element label="Submitter" mandatory="true" max_length="32" name="submitter" reference="sys_user" type="reference"/>
+        <index name="index">
+            <element name="submitter"/>
+        </index>
+        <index name="index2">
+            <element name="configuration_item"/>
+        </index>
+        <index name="index3">
+            <element name="cmdb_editor_configuration"/>
+        </index>
+    </element>
+</database>

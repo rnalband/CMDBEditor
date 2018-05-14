@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<record_update table="sp_container">
+    <sp_container action="INSERT_OR_UPDATE">
+        <background_color/>
+        <background_image/>
+        <background_style>default</background_style>
+        <bootstrap_alt>false</bootstrap_alt>
+        <class_name/>
+        <container_class_name/>
+        <name>CMDB Editor - Container 1</name>
+        <order>1</order>
+        <sp_page display_value="editor_home">558e4d9adb611300ab89eb41ca9619e0</sp_page>
+        <subheader>false</subheader>
+        <sys_class_name>sp_container</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2018-04-20 17:39:43</sys_created_on>
+        <sys_customer_update>false</sys_customer_update>
+        <sys_id>a011555edb611300ab89eb41ca9619d0</sys_id>
+        <sys_mod_count>3</sys_mod_count>
+        <sys_name>CMDB Editor - Container 1</sys_name>
+        <sys_package display_value="CMDB Editor" source="x_60289_cmdb_edito">1693bcd6db211300ab89eb41ca96196c</sys_package>
+        <sys_policy/>
+        <sys_replace_on_upgrade>false</sys_replace_on_upgrade>
+        <sys_scope display_value="CMDB Editor">1693bcd6db211300ab89eb41ca96196c</sys_scope>
+        <sys_update_name>sp_container_a011555edb611300ab89eb41ca9619d0</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2018-04-23 18:30:02</sys_updated_on>
+        <title/>
+        <width>container-fluid</width>
+    </sp_container>
+</record_update>

@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<record_update table="sp_ng_template">
+    <sp_ng_template action="INSERT_OR_UPDATE">
+        <id>newRelationshipModal</id>
+        <sp_widget display_value="CMDB Editor">b39e859adb611300ab89eb41ca9619ea</sp_widget>
+        <sys_class_name>sp_ng_template</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2018-04-25 19:23:10</sys_created_on>
+        <sys_customer_update>false</sys_customer_update>
+        <sys_id>16289bbbdba11300ab89eb41ca96191f</sys_id>
+        <sys_mod_count>25</sys_mod_count>
+        <sys_name>newRelationshipModal</sys_name>
+        <sys_package display_value="CMDB Editor" source="x_60289_cmdb_edito">1693bcd6db211300ab89eb41ca96196c</sys_package>
+        <sys_policy/>
+        <sys_replace_on_upgrade>false</sys_replace_on_upgrade>
+        <sys_scope display_value="CMDB Editor">1693bcd6db211300ab89eb41ca96196c</sys_scope>
+        <sys_update_name>sp_ng_template_16289bbbdba11300ab89eb41ca96191f</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2018-04-26 17:54:56</sys_updated_on>
+        <template><![CDATA[<div class="panel panel-primary">
+  <div class="panel-heading">
+    <h2 class="panel-title">${Adding a {{newRelType}} relationship to {{ciName}}}</h2>
+  </div>
+  <div class="panel-body">
+    <div class="container">
+      <div class="row">
+        <div class="col-xs-12 col-sm-4">
+          <label for="new_relationship_class" class="fieldLabel">${CI Class}</label>
+          <sn-record-picker id="new_relationship_class" field="newRelationshipClass"
+                              table="'sys_db_object'"
+                              display-field="'label'"
+                              value-field="'name'"
+                              search-fields="'label'"
+                              default-query="newRelClassQuery"
+                              page-size="50">
+            </sn-record-picker>
+        </div>
+      </div>
+    </div>
+    <div class="container">
+      <div class="row" style="margin-top: 10px;">
+        <div class="col-xs-12 col-sm-4">
+          <label for="new_relationship_type" ng-show="displayRelationshipPicker" class="fieldLabel">${Relationship type}</label>
+               <sn-record-picker ng-show="displayRelationshipPicker" id="new_relationship_type" field="newRelationshipType"
+                            table="'cmdb_rel_type'"
+                            display-field="'name'"
+                            value-field="'sys_id'"
+                            search-fields="'name'"
+                            default-query="newRelTypeQuery"
+                            page-size="50">
+          </sn-record-picker>
+        </div>
+        <div class="col-xs-12 col-sm-4">
+          <label for="new_relationship_ci" ng-show="displayCIRelationshipPicker" class="fieldLabel">${Configuration Item}</label>
+          <sn-record-picker ng-show="displayCIRelationshipPicker" id="new_relationship_ci" field="newRelationshipCI"
+                              table="newRelationshipCITable"
+                              display-field="'name'"
+                              value-field="'sys_id'"
+                              search-fields="'name'"
+                              default-query=""
+                              page-size="50">
+            </sn-record-picker>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="panel-footer">
+    <div class="clearfix">
+      <button class="btn btn-lg btn-warning pull-left" ng-click="closeModal()">
+        ${Cancel}
+      </button>
+      <button class="btn btn-lg btn-success pull-right" ng-disabled="checkIfNewRelFormReady()" ng-click="addThisRelationship()">
+        ${Add Relationship}
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+.fieldLabel {
+  font-weight: bold;
+  font-size: 16px;
+}
+</style>]]></template>
+    </sp_ng_template>
+</record_update>

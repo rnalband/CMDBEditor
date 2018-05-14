@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<record_update table="sp_angular_provider">
+    <sp_angular_provider action="INSERT_OR_UPDATE">
+        <name>cmdbEditorFieldSwitch</name>
+        <script><![CDATA[function cmdbEditorFieldSwitch() {
+	return {
+		restrict: 'E',
+		scope: {
+			field: '=',
+			disabled: '=?'
+		},
+		template: '<div ng-class="{\'changesVisibleDiv\': $root.showChanges && field.oldValue != field.value}"><label for="{{field.name}}" class="fieldLabel">{{field.label}}</label>' +
+		'<div ng-switch="field.displayType" class="fieldSwitcher">' +
+		'<input id="{{field.name}}" ng-disabled="disabled" class="form-control" ng-switch-when="number" ng-model="field.value" type="number" min="0" ng-min="0"/>' +
+		'<select id="{{field.name}}" ng-disabled="disabled" class="form-control" ng-switch-when="choice" ng-model="field.value">' +
+		'<option ng-repeat="op in field.choices | orderBy:\'sequence\'" value="{{op.value}}" ng-selected="field.value == op.value">{{op.label}}</option></select>' +
+		'<sn-record-picker ng-switch-when="reference" id="{{field.name}}" ng-if="!disabled" field="tempField" table="field.reference" display-field="field.displayField" value-field="field.valueField" search-fields="field.displayField" default-query="field.refQual"></sn-record-picker>' +
+		'<input ng-switch-when="reference" id="{{field.name}}" ng-if="disabled" ng-disabled="true" class="form-control" ng-model="field.display"/>' +
+		'<input id="{{field.name}}" ng-disabled="disabled" class="form-control" ng-switch-default ng-model="field.value"/></div>' + 
+		'<h4 ng-if="$root.showChanges && field.oldValue != field.value">Was: {{getOldDisplay()}}<i class="fa fa-lg fa-undo" style="margin-left: 10px;" ng-if="!disabled" ng-click="fieldUndoEvent()"/></h4></div>',
+		controller: function($scope, $rootScope) {
+			var firstRun = true;
+			
+			if ($scope.field.displayType == 'reference') {
+				$scope.tempField = {};
+				$scope.tempField.displayValue = $scope.field.display;
+				$scope.tempField.value = $scope.field.value || '';
+				$scope.tempField.name	= $scope.field.name;
+
+				$scope.$on("field.change", function(evt, parms) {
+					if (parms.field.name == $scope.field.name) {
+						$rootScope.$broadcast('fieldChanged.directive', parms);
+					}
+				});
+			}
+			
+			$scope.getOldDisplay = function() {
+				if (!$scope.field.oldDisplay)
+					return 'Empty';
+				else
+					return $scope.field.oldDisplay;
+			}
+			
+			$scope.fieldUndoEvent = function() {
+				$scope.undoEvent = true;
+				$scope.field.value = $scope.field.oldValue;
+				$scope.field.display = $scope.field.oldDisplay;
+				if ($scope.field.displayType == 'reference' && $scope.tempField) {
+					$scope.tempField.displayValue = $scope.field.oldDisplay;
+					$scope.tempField.value = $scope.field.oldValue;
+				}
+				
+				if ($rootScope.checkFormForChanges()) { //no more changes?  toggle for user
+					$rootScope.flagChangesOnForm();
+				}
+			}
+			
+			$scope.$watch('field.value', function() {
+				if (firstRun)
+					firstRun = false;
+				else {
+					if ($scope.field.displayType == 'choice') {
+						for (var x in $scope.field.choices) {
+							if ($scope.field.choices[x].value == $scope.field.value)
+								$scope.field.display = $scope.field.choices[x].label;
+						}
+					}
+					if ($rootScope.showChanges && !$scope.undoEvent) { //undo event is already going to check
+						if ($rootScope.checkFormForChanges()) {
+							$rootScope.flagChangesOnForm();
+						}
+					}
+					else if ($scope.undoEvent)
+						$scope.undoEvent = false; // reset flag
+				}
+			})
+		}
+	}
+}]]></script>
+        <sys_class_name>sp_angular_provider</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2018-04-23 04:09:18</sys_created_on>
+        <sys_customer_update>false</sys_customer_update>
+        <sys_id>f9b331cfdb211300ab89eb41ca9619d9</sys_id>
+        <sys_mod_count>37</sys_mod_count>
+        <sys_name>cmdbEditorFieldSwitch</sys_name>
+        <sys_package display_value="CMDB Editor" source="x_60289_cmdb_edito">1693bcd6db211300ab89eb41ca96196c</sys_package>
+        <sys_policy/>
+        <sys_replace_on_upgrade>false</sys_replace_on_upgrade>
+        <sys_scope display_value="CMDB Editor">1693bcd6db211300ab89eb41ca96196c</sys_scope>
+        <sys_update_name>sp_angular_provider_f9b331cfdb211300ab89eb41ca9619d9</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2018-04-27 06:20:13</sys_updated_on>
+        <type>directive</type>
+    </sp_angular_provider>
+</record_update>

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<record_update>
+    <sys_documentation element="relationship_to_configuration_entry" label="Relationship to Configuration Entry" language="en" table="x_60289_cmdb_edito_cmdb_editor_allowed_relationship">
+        <sys_documentation action="INSERT_OR_UPDATE">
+            <element>relationship_to_configuration_entry</element>
+            <help/>
+            <hint/>
+            <label>Relationship to Configuration Entry</label>
+            <language>en</language>
+            <name>x_60289_cmdb_edito_cmdb_editor_allowed_relationship</name>
+            <plural>Relationship to Configuration Entries</plural>
+            <sys_class_name>sys_documentation</sys_class_name>
+            <sys_created_by>admin</sys_created_by>
+            <sys_created_on>2018-04-20 16:27:27</sys_created_on>
+            <sys_customer_update>false</sys_customer_update>
+            <sys_id>4e800592db611300ab89eb41ca9619b4</sys_id>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_name>Relationship to Configuration Entry</sys_name>
+            <sys_package display_value="CMDB Editor" source="x_60289_cmdb_edito">1693bcd6db211300ab89eb41ca96196c</sys_package>
+            <sys_policy/>
+            <sys_replace_on_upgrade>false</sys_replace_on_upgrade>
+            <sys_scope display_value="CMDB Editor">1693bcd6db211300ab89eb41ca96196c</sys_scope>
+            <sys_update_name>sys_documentation_x_60289_cmdb_edito_cmdb_editor_allowed_relationship_relationship_to_configuration_entry_en</sys_update_name>
+            <sys_updated_by>admin</sys_updated_by>
+            <sys_updated_on>2018-04-20 16:27:27</sys_updated_on>
+            <url/>
+            <url_target/>
+        </sys_documentation>
+    </sys_documentation>
+</record_update>

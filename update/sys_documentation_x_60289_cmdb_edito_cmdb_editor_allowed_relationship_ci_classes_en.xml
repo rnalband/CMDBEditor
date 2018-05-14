@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<record_update>
+    <sys_documentation element="ci_classes" label="CI Classes" language="en" table="x_60289_cmdb_edito_cmdb_editor_allowed_relationship">
+        <sys_documentation action="INSERT_OR_UPDATE">
+            <element>ci_classes</element>
+            <help/>
+            <hint/>
+            <label>CI Classes</label>
+            <language>en</language>
+            <name>x_60289_cmdb_edito_cmdb_editor_allowed_relationship</name>
+            <plural>CI Classes</plural>
+            <sys_class_name>sys_documentation</sys_class_name>
+            <sys_created_by>admin</sys_created_by>
+            <sys_created_on>2018-04-20 16:23:55</sys_created_on>
+            <sys_customer_update>false</sys_customer_update>
+            <sys_id>92bff492db611300ab89eb41ca96190e</sys_id>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_name>CI Classes</sys_name>
+            <sys_package display_value="CMDB Editor" source="x_60289_cmdb_edito">1693bcd6db211300ab89eb41ca96196c</sys_package>
+            <sys_policy/>
+            <sys_replace_on_upgrade>false</sys_replace_on_upgrade>
+            <sys_scope display_value="CMDB Editor">1693bcd6db211300ab89eb41ca96196c</sys_scope>
+            <sys_update_name>sys_documentation_x_60289_cmdb_edito_cmdb_editor_allowed_relationship_ci_classes_en</sys_update_name>
+            <sys_updated_by>admin</sys_updated_by>
+            <sys_updated_on>2018-04-20 16:23:55</sys_updated_on>
+            <url/>
+            <url_target/>
+        </sys_documentation>
+    </sys_documentation>
+</record_update>

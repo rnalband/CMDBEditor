@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<record_update table="m2m_sp_ng_pro_sp_widget">
+    <m2m_sp_ng_pro_sp_widget action="INSERT_OR_UPDATE">
+        <sp_angular_provider display_value="cmdbEditorFieldSwitch">f9b331cfdb211300ab89eb41ca9619d9</sp_angular_provider>
+        <sp_widget display_value="CMDB Editor">b39e859adb611300ab89eb41ca9619ea</sp_widget>
+        <sys_class_name>m2m_sp_ng_pro_sp_widget</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2018-04-23 04:09:47</sys_created_on>
+        <sys_customer_update>false</sys_customer_update>
+        <sys_id>ad7431cfdb211300ab89eb41ca961923</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>cmdbEditorFieldSwitch.CMDB Editor</sys_name>
+        <sys_package display_value="CMDB Editor" source="x_60289_cmdb_edito">1693bcd6db211300ab89eb41ca96196c</sys_package>
+        <sys_policy/>
+        <sys_replace_on_upgrade>false</sys_replace_on_upgrade>
+        <sys_scope display_value="CMDB Editor">1693bcd6db211300ab89eb41ca96196c</sys_scope>
+        <sys_update_name>m2m_sp_ng_pro_sp_widget_ad7431cfdb211300ab89eb41ca961923</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2018-04-23 04:09:47</sys_updated_on>
+    </m2m_sp_ng_pro_sp_widget>
+</record_update>

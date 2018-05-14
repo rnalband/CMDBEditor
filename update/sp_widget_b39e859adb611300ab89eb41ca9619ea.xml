@@ -1,0 +1,992 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<record_update table="sp_widget">
+    <sp_widget action="INSERT_OR_UPDATE">
+        <category>custom</category>
+        <client_script><![CDATA[function($scope, $rootScope, $uibModal, $window, $timeout) {
+	/* widget controller */
+	var c = this;
+	
+	$scope.formDisabled = false;
+	$scope.existingRecord = c.data.existingRecord;
+	$scope.committed = c.data.committed;
+	$scope.drafted = c.data.drafted;
+	$scope.notSaved = (!$scope.committed && !$scope.drafted);
+	$scope.approved = c.data.approved;
+	$scope.submitter = c.data.submitter;
+	$scope.submitterName = c.data.submitterName;
+	$scope.currentUser = c.data.currentUser;
+	$scope.isCurrentUserAnApprover = c.data.isCurrentUserAnApprover;
+	
+	$scope.existingRecordsForCI = c.data.existingRecordsForCI;
+
+	var curPageID = c.data.pageID;
+	var curPortalID = c.data.portalID;
+
+	if ($scope.existingRecord && $scope.committed)
+		$scope.formDisabled = true;
+
+	if (!$scope.notSaved && $scope.submitter != $scope.currentUser && !$scope.committed)
+		$scope.formDisabled = true;
+	
+	if ($scope.isCurrentUserAnApprover && $scope.approved == 'approved' || $scope.approved == 'rejected')
+		$scope.formDisabled = true;
+
+	$scope.classField = {};
+	$scope.classField.displayValue = 'CI Class';
+	$scope.classField.value = '';
+	$scope.classField.name	= 'ci_class';
+
+	$scope.newRelationshipClass = {};
+	$scope.newRelationshipClass.displayValue = 'CI Class';
+	$scope.newRelationshipClass.value = '';
+	$scope.newRelationshipClass.name	= 'new_relationship_class';
+
+	$scope.newRelationshipType = {};
+	$scope.newRelationshipType.displayValue = 'Relationship Type';
+	$scope.newRelationshipType.value = '';
+	$scope.newRelationshipType.name	= 'new_relationship_type';
+
+	$scope.newRelationshipCI = {};
+	$scope.newRelationshipCI.displayValue = 'New CI';
+	$scope.newRelationshipCI.value = '';
+	$scope.newRelationshipCI.name	= 'new_relationship_ci';
+
+	$scope.classFieldQuery = c.data.classFieldQuery || c.options.classFieldQuery || '';
+	$scope.cmdbConfigurationTableName = c.data.cmdbConfigurationTableName;
+	$scope.flagChangesDisplayLabel = 'Show Changes';
+	$rootScope.showChanges = $scope.committed;
+
+	var previouslySelectedCI;
+
+	function isXSScreenSize() {
+		return $window.matchMedia('(max-width: 767px)').matches;
+	}
+	
+	$scope.returnURL = function(id) {
+		if (curPortalID && curPageID && id)
+			return '/' + curPortalID + '?id=' + curPageID + '&staged_change=' + id;
+		else if (curPortalID)
+			return '/' + curPortalID;
+		else
+			return '#';
+	}
+
+	function updateURL(id) {
+		if (curPortalID && curPageID && id)
+			$window.location.assign('/' + curPortalID + '?id=' + curPageID + '&staged_change=' + id);
+	}
+
+	function loadEditable() {
+		if ($scope.editableSelected) {
+			$scope.editableCol1 = [];
+			$scope.editableCol2 = [];
+			$scope.editableColumns = $scope.editableSelected.editableColumns;
+			$scope.editableRelationships = $scope.editableSelected.editableRelationships;
+			$scope.ciName = $scope.editableSelected.displayName;
+
+			if ($scope.editableRelationships.parent)
+				$scope.parentRelationships = $scope.editableRelationships.parent;
+			if ($scope.editableRelationships.child)
+				$scope.childRelationships = $scope.editableRelationships.child;
+
+			if ($scope.editableColumns && $scope.editableColumns.length > 1) {
+				$scope.editableTwoColumn = true;
+				var x = 0, maxL = $scope.editableColumns.length;
+				for (x; x < maxL; x++) {
+					if (x % 2 == 0)
+						$scope.editableCol1.push($scope.editableColumns[x]);
+					else
+						$scope.editableCol2.push($scope.editableColumns[x]);
+				}
+			}
+			else {
+				$scope.editableOneColumn = true;
+				$scope.editableCol1 = $scope.editableColumns;
+			}
+		}
+	}
+
+	function pullFromExisting(ob) {
+		$scope.selectedClass = ob.selectedClass;
+		$scope.editableSelected = ob.editableSelected;
+		loadEditable();
+	}
+
+	var existingJsonOptions = c.data.jsonOptions || '';
+	if (existingJsonOptions)
+		pullFromExisting(existingJsonOptions);
+
+	function buildJSONValue() {
+		var tmpOb = {};
+		tmpOb.selectedClass = $scope.selectedClass;
+		tmpOb.editableSelected = {};
+		tmpOb.editableSelected.editableRelationships = {};
+		tmpOb.editableSelected.editableRelationships.parent = $scope.parentRelationships;
+		tmpOb.editableSelected.editableRelationships.child = $scope.childRelationships;
+		tmpOb.editableSelected.displayName = $scope.ciName;
+
+		tmpOb.editableSelected.editableColumns = [];
+
+		if ($scope.editableColumns) {
+			var x = 0, maxL = $scope.editableColumns.length, halfL;
+			if (maxL > 1)
+				halfL = Math.ceil(maxL/2);
+
+			for (x; x < maxL; x++) {
+				if (x <= halfL) {
+					if ($scope.editableCol1[x])
+						tmpOb.editableSelected.editableColumns.push($scope.editableCol1[x]);
+					if ($scope.editableCol2[x])
+						tmpOb.editableSelected.editableColumns.push($scope.editableCol2[x]);
+				}
+			}
+		}
+
+		return JSON.stringify(tmpOb);
+	}
+
+	$scope.isMobile = isXSScreenSize();
+
+	$scope.$on("field.change", function(evt, parms) {
+		$('input.select2-focusser').blur();
+		if (parms.field.name == 'ci_class') {
+			c.server.get({'action': 'loadClass', 'classSys': parms.newValue}).then(function(response) {
+				if (response.data) {
+					$scope.selectedClass = response.data.selectedClass;
+					$scope.selectedClass.editorConfigSys = parms.newValue;
+					$scope.editableRecords = response.data.editableRecords || [];
+					$scope.editableRecordField = {};
+					$scope.editableRecordField.displayValue = $scope.selectedClass.name;
+					$scope.editableRecordField.value = '';
+					$scope.editableRecordField.name = 'editable_selection';
+					$scope.editableRecordFieldQuery = 'sys_idIN' + $scope.editableRecords.join(',');
+				}
+			});
+		}
+
+		if (parms.field.name == 'new_relationship_class') {
+			var newRelQuery = [];
+			$scope.displayRelationshipPicker = false;
+			$scope.displayCIRelationshipPicker = false;
+			$scope.newRelationshipType.value = '';
+			$scope.newRelationshipCI.value = '';
+
+			var x = 0, y = 0, maxL = $scope.selectedClass.availableRelationships.length, maxLY = 0;
+			for (x; x < maxL; x++) {
+				if ($scope.newRelType == $scope.selectedClass.availableRelationships[x].parentChild) {
+					maxLY = $scope.selectedClass.availableRelationships[x].classes.length;
+					var classMatch = false;
+					for (y; y < maxLY; y++) {
+						if ($scope.selectedClass.availableRelationships[x].classes[y].name == parms.newValue)
+							classMatch = true;
+					}
+					y = 0;
+					if (classMatch) {
+						//if ($scope.selectedClass.availableRelationships[x].classes.indexOf(parms.newValue) > -1) {
+						maxLY = $scope.selectedClass.availableRelationships[x].relationships.length;
+						for (y; y < maxLY; y++) {
+							if (newRelQuery.indexOf($scope.selectedClass.availableRelationships[x].relationships[y].sys_id) == -1)
+								newRelQuery.push($scope.selectedClass.availableRelationships[x].relationships[y].sys_id);
+						}
+					}
+				}
+			}
+
+			$scope.newRelTypeQuery = 'sys_idIN' + newRelQuery.join(',');
+			$scope.displayRelationshipPicker = parms.newValue != '';
+
+			$scope.newRelationshipCITable = parms.newValue;
+			$scope.displayCIRelationshipPicker = parms.newValue != '';
+		}
+
+		if (parms.field.name == 'editable_selection') {
+			$scope.editableCol1 = [];
+			$scope.editableCol2 = [];
+			$scope.editableSelected = [];
+			$scope.editableOneColumn = false;
+			$scope.editableCol1 = [];
+			$scope.editableTwoColumn = false;
+			$scope.editableCol2 = [];
+			$scope.editableSelected = false;
+			$scope.selectedClass.curSysID = parms.newValue;
+
+			$scope.parentRelationships = false;
+			$scope.childRelationships = false;
+
+			if (parms.newValue != '') {
+				if (previouslySelectedCI == parms.newValue)
+					return;
+
+				c.server.get({'action': 'loadCI', 'ciSys': parms.newValue, 'thisClass': $scope.selectedClass}).then(function(response) {
+					if (response) {
+						if (response.data) {
+							$scope.editableSelected = response.data.editableSelected;
+							loadEditable();
+							previouslySelectedCI = response.data.ciSys;
+						}
+					}
+				});
+			}
+			else {
+				previouslySelectedCI = '';
+			}
+		}
+	});
+
+
+
+	$scope.$on('fieldChanged.directive', function(evt, evtParm) {
+		for (var x = 0; x < $scope.editableColumns.length; x++) {
+			if ($scope.editableColumns[x].name == evtParm.field.name) {
+				$scope.editableColumns[x].value = evtParm.field.value;
+				$scope.editableColumns[x].display = evtParm.field.displayValue;
+			}
+		}
+	});
+	
+	$scope.updateDelete = function(ob) {
+		ob.deleted = true;
+	}
+
+	$scope.undoLast = function(ob) {
+		if (ob.added) {
+			ob.deleted = true;
+			ob.wasAddedThisSession = true;
+			ob.added = false;
+		}
+		else if (!ob.added && ob.wasAddedThisSession) {
+			ob.added = true;
+			ob.wasAddedThisSession = false;
+			ob.deleted = false;
+		}
+		else {
+			ob.deleted = false;
+			ob.added = false;
+			ob.wasAddedThisSession = false;
+		}
+	}
+
+	$scope.relIsEmpty = function(ob) {
+		return (!ob || !ob[0])
+	}
+
+	$scope.addParentRelationship = function() {
+		$scope.newRelType = 'parent';
+		var parentTableNames = [], x = 0, maxL = $scope.selectedClass.availableRelationships.length;
+		for (x; x < maxL; x++) {
+			if ($scope.selectedClass.availableRelationships[x].parentChild == 'parent') {
+				var y = 0, maxLY = $scope.selectedClass.availableRelationships[x].classes.length;
+				for (y; y < maxLY; y++) {
+					parentTableNames.push($scope.selectedClass.availableRelationships[x].classes[y].name);
+				}
+			}
+		}
+		$scope.newRelClassQuery = 'nameIN' + parentTableNames.join(',');
+		$scope.modalInstance = $uibModal.open({
+			templateUrl: 'newRelationshipModal',
+			scope: $scope,
+			size: 'lg',
+			backdrop  : 'static',
+			keyboard  : false
+		});
+
+		/*$scope.modalInstance.result.then(function(){
+			//Get triggers when modal is closed
+		}, function(){
+			$scope.newRelationshipClass.value = '';
+			$scope.newRelationshipCI.value = '';
+			$scope.newRelationshipType.value = '';
+		});*/
+	}
+
+	$scope.addChildRelationship = function() {
+		$scope.newRelType = 'child';
+		var childTableNames = [], x = 0, maxL = $scope.selectedClass.availableRelationships.length;
+		for (x; x < maxL; x++) {
+			if ($scope.selectedClass.availableRelationships[x].parentChild == 'child') {
+				var y = 0, maxLY = $scope.selectedClass.availableRelationships[x].classes.length;
+				for (y; y < maxLY; y++) {
+					childTableNames.push($scope.selectedClass.availableRelationships[x].classes[y].name);
+				}
+			}
+		}
+		$scope.newRelClassQuery = 'nameIN' + childTableNames.join(',');
+		$scope.modalInstance = $uibModal.open({
+			templateUrl: 'newRelationshipModal',
+			scope: $scope,
+			size: 'lg',
+			backdrop  : 'static',
+			keyboard  : false
+		});
+
+		/*$scope.modalInstance.result.then(function(){
+			//Get triggers when modal is closed
+		}, function(){
+			debugger;
+			$scope.newRelationshipClass.value = '';
+			$scope.newRelationshipCI.value = '';
+			$scope.newRelationshipType.value = '';
+		});*/
+	}
+
+	$scope.checkIfNewRelFormReady = function() {
+		return (!($scope.newRelationshipCI.value && $scope.newRelationshipType.value));
+	}
+
+	$scope.closeModal = function() {
+		$scope.newRelationshipClass.value = '';
+		$scope.newRelationshipCI.value = '';
+		$scope.newRelationshipType.value = '';
+		$scope.displayRelationshipPicker = false;
+		$scope.displayCIRelationshipPicker = false;
+		$scope.modalInstance.close();
+	}
+
+	$scope.addThisRelationship = function() {
+		var newRelOb = {}, tempArr = [];
+		newRelOb.sys_id = $scope.newRelationshipCI.value;
+		newRelOb.displayValue = $scope.newRelationshipCI.displayValue;
+		newRelOb.relType = $scope.newRelationshipType.value;
+		newRelOb.relName = $scope.newRelationshipType.displayValue;
+		newRelOb.className = $scope.newRelationshipClass.value;
+		newRelOb.classDisplay = $scope.newRelationshipClass.displayValue;
+		newRelOb.added = true;
+		tempArr.push(newRelOb);
+		if ($scope.newRelType == 'child')
+			$scope.parentRelationships.push(tempArr);
+		else
+			$scope.childRelationships.push(tempArr);
+
+		$scope.closeModal();
+	}
+
+	$scope.clearFormAndReset = function() {
+		$scope.selectedClass = false;
+		$scope.editableRecords = [];
+		$scope.editableRecordField = {};
+		$scope.editableRecordFieldQuery = '';
+
+		$scope.classField.value = '';
+		$scope.newRelationshipClass.value = '';
+		$scope.newRelationshipType.value = '';
+		$scope.newRelationshipCI.value = '';
+
+		$scope.displayRelationshipPicker = false;
+		$scope.displayCIRelationshipPicker = false;
+		$scope.newRelTypeQuery = '';
+		$scope.newRelType = '';
+		$scope.newRelationshipCITable = '';
+		$scope.modalInstance = {};
+
+		$scope.editableCol1 = [];
+		$scope.editableCol2 = [];
+		$scope.editableOneColumn = false;
+		$scope.editableCol1 = [];
+		$scope.editableTwoColumn = false;
+		$scope.editableCol2 = [];
+		$scope.editableSelected = false;
+		$scope.editableColumns = false;
+		$scope.editableRelationships = false;
+
+		$scope.parentRelationships = [];
+		$scope.childRelationships = [];
+
+		$scope.ciName = '';
+		previouslySelectedCI = '';
+	}
+
+	$rootScope.checkFormForChanges = function(checkRels) {
+		var tmpOb, tmpArr;
+		for(var x in $scope.editableCol1) {
+			tmpOb = $scope.editableCol1[x];
+			if (tmpOb.value != tmpOb.oldValue) {
+				return false;
+			}
+		}
+		for(var y in $scope.editableCol2) {
+			tmpOb = $scope.editableCol2[y];
+			if (tmpOb.value != tmpOb.oldValue) {
+				return false;
+			}
+		}
+
+		if (checkRels) {
+			for (var z in $scope.parentRelationships) {
+				tmpArr = $scope.parentRelationships[z];
+				for (var zz in tmpArr) {
+					tmpOb = tmpArr[zz];
+					if (tmpOb.added || tmpOb.deleted) {
+						return false;
+					}
+				}
+			}
+			for (var a in $scope.childRelationships) {
+				tmpArr = $scope.childRelationships[a];
+				for (var aa in tmpArr) {
+					tmpOb = tmpArr[aa];
+					if (tmpOb.added || tmpOb.deleted) {
+						return false;
+					}
+				}
+			}
+		}
+
+		return true; //if I'm done and haven't returned yet, I had no changes
+	}
+
+	$rootScope.flagChangesOnForm = function() {
+		$rootScope.showChanges = !$rootScope.showChanges;
+		$scope.flagChangesDisplayLabel = ($rootScope.showChanges) ? 'Hide Changes' : 'Show Changes';
+	}
+
+
+
+	$scope.submit = function(fullSubmit) {
+		var jsonOptions = buildJSONValue();
+		c.server.get({'action': 'submission', 'submitType': (fullSubmit) ? 'submit' : 'draft', 'jsonChanges': jsonOptions}).then(function(response) {
+			if (response.data) {
+				if (response.data.stagedChange) {
+					$scope.formDisabled = true;
+					$timeout(function() {
+						updateURL(response.data.stagedChange);
+					}, 3000);
+				}
+			}
+		})
+	}
+	
+	$scope.approve = function(approved) {
+		c.server.get({'action': 'approveChange', 'approved': approved, 'recordSys': $scope.existingRecord}).then(function(response) {
+			if (response && response.data) {
+				$timeout(function() {
+					if (curPortalID)
+						$window.location.assign('/' + curPortalID);
+					}, 3000);
+			}
+		})
+	}
+}]]></client_script>
+        <controller_as>c</controller_as>
+        <css>.heightFooter {
+  height: calc(100vh - 125px);
+  max-height: calc(100vh - 125px);
+  overflow-y: auto;
+}
+
+.bGWhite {
+  background-color: #fff;
+}
+
+hr.formDivider {
+  border: 1px solid $brand-primary;
+  //margin: 5px 10px;
+}
+
+.fieldLabel {
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.editorFooter {
+  height: 60px;
+  width: 100vw !important;
+
+  position: fixed;
+  bottom: 0;
+  left: 0;
+
+  background-color: #fff;
+  z-index: 100;
+}
+
+.borderTop {
+  border-top: 2px solid $brand-primary;
+}
+
+tr.deletedRow {
+  td {
+    color: $brand-danger;
+    text-decoration: line-through;
+    background-color: lighten($brand-danger, 50%);
+  }
+}
+
+tr.addedRow {
+  td {
+    color: $brand-success;
+    text-decoration: underline;
+    background-color: lighten($brand-success, 75%);
+  }
+}
+
+tbody.relBody {
+  tr {
+    td {
+      text-align: left;
+    }
+  }
+}
+
+div.editorFooter &gt; div.clear-fix {
+  //margin: 5px 10px;
+}
+
+.marginB10 {
+  margin-bottom: 10px;
+}
+
+.buttonPanel {
+  button {
+    margin:5px; 
+  }
+}
+
+div.existingRecordsList {
+  margin-bottom: 0px;
+  margin-top: 10px;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+div.changesVisibleDiv {
+  background-color: $brand-info;
+  border-radius: 4px;
+  margin-top: 8px;
+  div.fieldSwitcher {
+    padding-left: 2px;
+    padding-right: 2px;
+  }
+  label, h4 {
+    color: #fff;
+    padding-left: 2px;
+  }
+  label {
+    padding-top: 2px;
+  }
+  h4 {
+    padding-bottom: 2px;
+    font-weight: bold;
+  }
+}
+
+div.fieldRow &gt; div:last-child &gt; div.fieldObject.mobilePadding10:last-child {
+  padding-bottom: 10px;
+}
+
+dl.row {
+  margin: 3px 0px;
+}
+
+@media only screen and (min-width : 768px)  {
+  .borderLeftRightPrimary {
+    border-left: 1px solid $brand-primary;
+    border-right: 1px solid $brand-primary;
+  }
+}
+
+@media only screen and (max-width: 768px) {
+  /*.editorFooter {
+  height: 60px;
+  width: 100vw !important;
+
+  position: fixed;
+  top: 64px;
+  left: 0;
+
+  background-color: #fff;
+  z-index: 100;
+
+  border-top: 0px;
+  border-bottom: 2px solid $brand-primary;
+}*/
+
+  td {
+    padding: 5px !important;
+  }
+}
+</css>
+        <data_table>sp_instance</data_table>
+        <demo_data/>
+        <description/>
+        <docs/>
+        <field_list/>
+        <has_preview>false</has_preview>
+        <id>cmdb_editor</id>
+        <internal>false</internal>
+        <link/>
+        <name>CMDB Editor</name>
+        <option_schema/>
+        <public>false</public>
+        <roles/>
+        <script><![CDATA[(function() {
+	/* populate the 'data' object */
+	/* e.g., data.table = $sp.getValue('table'); */
+
+	var helper = new CMDBEditor();
+	data.cmdbConfigurationTableName = helper.getBaseConfigTable();
+	data.stagedChangeTable = helper.getStagedChangeTable();
+	data.pageID = $sp.getParameter('id') || $sp.getPortalRecord().getDisplayValue('homepage') || 'editor_home';
+	data.portalID = $sp.getPortalRecord().getValue('url_suffix');
+	data.classNameProvided = $sp.getParameter('class_name') || false;
+	data.ciSysIDProvided = $sp.getParameter('sys_id') || false;
+
+	data.existingRecord = $sp.getParameter('staged_change') || false;
+	var grExisting = getExistingRecord(data.stagedChangeTable, data.existingRecord);
+	data.committed = (grExisting) ? isCommitted(grExisting) : false;
+	data.approved = (grExisting) ? isApproved(grExisting) : false;
+	data.drafted = (grExisting && !data.committed);
+	data.submitter = (grExisting) ? grExisting.submitter.toString() : false;
+	data.submitterName = (grExisting) ? grExisting.submitter.getDisplayValue() : '';
+	data.currentUser = gs.getUserID();
+	data.isCurrentUserAnApprover = (grExisting) ? isCurrentUserAnApprover(data.currentUser, grExisting.sys_id.toString()) : false;
+
+	if (input) {
+		if (input.action == 'loadClass' && input.classSys) {
+			data.selectedClass = helper.loadClass(input.classSys);
+			data.editableRecords = helper.getEditableRecords(data.selectedClass);
+		}
+		if (input.action == 'loadCI' && input.ciSys) {
+			data.existingRecordsForCI = helper.getExistingRecordsForCI(input.ciSys);
+			data.editableSelected = helper.getEditableSelection(input.ciSys, input.thisClass)
+			data.ciSys = input.ciSys;
+		}
+		if (input.action == 'approveChange' && input.recordSys) {
+			data.approvedSuccess = helper.setApprovalForMe(input.recordSys, input.approved);
+			var approvalMessage = '';
+			if (input.approved && data.approvedSuccess)
+				approvalMessage = "Successfully Approved, and Committed Changes.";
+			else if (!input.approved && data.approvedSuccess)
+				approvalMessage = "Rejected Changes, and did not commit.";
+			else
+				approvalMessage = "Error while updating approvals.  Please try again later.";
+			
+			if (data.approvedSuccess)
+				gs.addInfoMessage(approvalMessage);
+			else
+				gs.addErrorMessage(approvalMessage);
+		}
+		if (input.action == 'submission') {
+			var newStagedChange = '';
+			if (input.submitType == 'submit')
+				newStagedChange = helper.submitChanges(input.jsonChanges, data.existingRecord, true);
+			else if (input.submitType == 'draft')
+				newStagedChange = helper.submitChanges(input.jsonChanges, data.existingRecord, false);
+
+			if (newStagedChange) {
+				var msg = 'Successfully ';
+				if (data.existingRecord && input.submitType == 'draft')
+					msg += 'updated this staged change.';
+				else if (!data.existingRecord && input.submitType == 'draft')
+					msg += 'created this staged change.';
+				else
+					msg += 'submitted this staged change.';
+
+				gs.addInfoMessage(msg);
+				data.stagedChange = newStagedChange;
+			}
+			else {
+				gs.addErrorMessage("We've encountered an error.  We apologize for any inconvenience!");
+			}
+		}
+
+		return;
+	}
+
+	if (data.existingRecord) {
+		data.jsonOptions = '';
+		var gr = new GlideRecord(data.stagedChangeTable);
+		if (gr.get(data.existingRecord)) {
+			data.existingRecordsForCI = helper.getExistingRecordsForCI(gr.configuration_item.toString());	
+			data.jsonOptions = JSON.parse(gr.staged_changes);
+		}
+	}
+	else {
+		if (data.classNameProvided) {
+			var classConfSys = helper.getConfigurationSysForClassName(data.classNameProvided);
+			var selectedClass = helper.loadClass(classConfSys), editableSelected, tmpOb = {};
+			selectedClass.editorConfigSys = classConfSys;
+			if (data.ciSysIDProvided) {
+				editableSelected = helper.getEditableSelection(data.ciSysIDProvided, selectedClass);
+				selectedClass.curSysID = data.ciSysIDProvided;
+				data.existingRecordsForCI = helper.getExistingRecordsForCI(data.ciSysIDProvided);	
+			}
+
+			tmpOb.selectedClass = selectedClass;
+			tmpOb.editableSelected = editableSelected;
+			data.jsonOptions = tmpOb;
+		}
+	}
+})();
+
+function isCurrentUserAnApprover(sysUser, sysStagedChange) {
+	var gr = new GlideRecord('sysapproval_approver');
+	gr.addQuery('approver', sysUser);
+	gr.addQuery('document_id', sysStagedChange);
+	gr.query();
+	return gr.hasNext();
+}
+
+function getExistingRecord(tbl, sys) {
+	if (tbl) {
+		var gr = new GlideRecord(tbl);
+		if (gr.get(sys)) {
+			return gr;
+		}
+	}
+
+	return false;
+}
+
+function isCommitted(gr) {
+	return gr.committed.toString() == 'true';
+}
+
+function isApproved(gr) {
+	return gr.approval.toString();
+}]]></script>
+        <servicenow>false</servicenow>
+        <sys_class_name>sp_widget</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2018-04-20 17:29:01</sys_created_on>
+        <sys_customer_update>false</sys_customer_update>
+        <sys_id>b39e859adb611300ab89eb41ca9619ea</sys_id>
+        <sys_mod_count>356</sys_mod_count>
+        <sys_name>CMDB Editor</sys_name>
+        <sys_package display_value="CMDB Editor" source="x_60289_cmdb_edito">1693bcd6db211300ab89eb41ca96196c</sys_package>
+        <sys_policy/>
+        <sys_replace_on_upgrade>false</sys_replace_on_upgrade>
+        <sys_scope display_value="CMDB Editor">1693bcd6db211300ab89eb41ca96196c</sys_scope>
+        <sys_update_name>sp_widget_b39e859adb611300ab89eb41ca9619ea</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2018-04-27 20:46:36</sys_updated_on>
+        <template><![CDATA[<div id="parentDiv" class="borderLeftRightPrimary bGWhite marginTop0" ng-class="{'heightFooter': !formDisabled || (committed && approved == 'requested' && isCurrentUserAnApprover), 'height100': formDisabled}">
+  <div ng-if="!selectedClass" class="container">
+    <div class="row">
+      <div class="col-xs-12">
+        <h1 class="display-1">
+          Select a CI Class to continue
+        </h1>
+        <hr class="formDivider" />
+        <label for="ci_class" class="fieldLabel">${CI Class}</label>
+        <sn-record-picker id="ci_class" field="classField"
+                          table="cmdbConfigurationTableName"
+                          display-field="'name'"
+                          value-field="'sys_id'"
+                          search-fields="'ci_class'"
+                          default-query="classFieldQuery"
+                          page-size="50">
+        </sn-record-picker>
+      </div>
+    </div>
+  </div>
+  <div ng-if="selectedClass" class="container">
+
+    <div class="row">
+      <div class="col-xs-12 col-sm-6">
+        <h3 class="display-1 text-center">
+          ${Selected CI Information}
+        </h3>
+        <hr class="formDivider" />
+        <dl class="row">
+          <dt class="col-xs-6">
+            ${Selected Class}
+          </dt>
+          <dd class="col-xs-6">
+            <span>{{selectedClass.name}}</span>
+          </dd>
+        </dl>
+        <dl class="row" ng-if="ciName">
+          <dt class="col-xs-6">
+            ${Selected {{selectedClass.name}}}
+          </dt>
+          <dd class="col-xs-6">
+            <span>{{ciName}}</span>
+          </dd>
+        </dl>
+      </div>
+      <div class="col-xs-12 col-sm-6">
+        <h3 class="display-1 text-center">
+          ${Current Staged Change Status}
+        </h3>
+        <hr class="formDivider" />
+        <dl class="row">
+          <dt class="col-xs-6">
+            ${Status}
+          </dt>
+          <dd class="col-xs-6">
+            <span ng-if="committed">${Submitted}</span>
+            <span ng-if="drafted">${Saved as Draft}</span>
+            <span ng-if="notSaved">${Not Saved}</span>
+          </dd>
+        </dl>
+        <dl class="row" ng-if="!notSaved">
+          <dt class="col-xs-6">
+            ${Submitter}
+          </dt>
+          <dd class="col-xs-6">
+            <span>${{{submitterName}}}</span>
+          </dd>
+        </dl>
+        <dl class="row">
+          <dt class="col-xs-6">
+            ${Approval Status}
+          </dt>
+          <dd class="col-xs-6">
+            <span ng-if="approved == 'rejected'">${Rejected}</span>
+            <span ng-if="approved == 'approved'">${Approved}</span>
+            <span ng-if="approved == 'requested'">${Requested}</span>
+            <span ng-if="!approved || approved == 'not_requested'">${Not Requested}</span>            
+          </dd>
+        </dl>
+        <div class="existingRecordsList list-group" ng-if="!committed && existingRecordsForCI && (existingRecordsForCI.length > 1 || existingRecordsForCI[0].sys_id != existingRecord)">
+          <div class="text-center">
+            <h3 class="display-1">
+              ${Existing Staged Changes for this CI}
+            </h3>
+          </div>
+          <a href ng-href="{{returnURL(rec.sys_id)}}" ng-if="rec.sys_id != existingRecord" title="Requested on {{rec.submittedDate}}" class="list-group-item list-group-item-action" ng-repeat="rec in existingRecordsForCI | orderBy:submittedDate track by sys_id">
+           	${Requested by {{rec.submitter}}}
+          </a>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-xs-12">
+        <hr class="formDivider" ng-show="!ciName"/>
+        <label for="editable_record_picker" class="fieldLabel" ng-show="!ciName">{{selectedClass.name}}</label>
+        <sn-record-picker id="editable_record_picker" field="editableRecordField"
+                          table="selectedClass.className" ng-show="editableRecords && !ciName"
+                          display-field="selectedClass.displayField"
+                          value-field="'sys_id'"
+                          search-fields="selectedClass.displayField"
+                          default-query="editableRecordFieldQuery"
+                          page-size="50">
+        </sn-record-picker>
+      </div>
+      <div class="col-xs-12 col-sm-8" ng-show="!editableRecords && !ciName">
+        <h3 class="display-1">
+          No records to update.
+        </h3>
+      </div>
+    </div>
+  </div>
+  <div class="container" ng-show="editableSelected">
+    <hr class="formDivider"/>
+    <div class="row fieldRow">
+      <div class="col-xs-12" ng-if="editableOneColumn">
+        <div class="fieldObject" ng-repeat="fld in editableCol1">
+          <cmdb-editor-field-switch field="fld" disabled="formDisabled"></cmdb-editor-field-switch>
+        </div>
+      </div>
+      <div class="col-xs-12 col-sm-6" ng-if="editableTwoColumn">
+        <div class="fieldObject" ng-repeat="fld in editableCol1">
+          <cmdb-editor-field-switch field="fld" disabled="formDisabled"></cmdb-editor-field-switch>
+        </div>
+      </div>
+      <div class="col-xs-12 col-sm-6" ng-if="editableTwoColumn">
+        <div class="fieldObject" ng-repeat="fld in editableCol2" ng-class="{'mobilePadding10': isMobile}">
+          <cmdb-editor-field-switch field="fld" disabled="formDisabled"></cmdb-editor-field-switch>
+        </div>
+      </div>
+    </div>
+    <div class="row" ng-show="!formDisabled && !$root.checkFormForChanges()">
+      <div class="col-xs-12">
+        <div class="text-center">
+          <button class="btn btn-info btn-lg" ng-click="$root.flagChangesOnForm()" style="margin-top: 5px;">
+            ${{{flagChangesDisplayLabel}}}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="container" ng-show="editableSelected">
+    <hr class="formDivider" ng-if="editableSelected.editableRelationships.parent[0] || editableSelected.editableRelationships.child[0]"/>
+    <div class="row">
+      <div class="col-xs-12" ng-if="editableSelected.editableRelationships.parent[0] || editableSelected.editableRelationships.child[0]">
+        <div class="col-xs-12 col-sm-6">
+          <div class="text-center">
+            <h3 class="display-1">
+              ${Children of {{ciName}}}
+            </h3>
+            <hr />
+            <table class="table table-responsive table-striped">
+              <thead>
+                <tr>
+                  <th width="20px" ng-if="!formDisabled"></th>
+                  <th>Child</th>
+                  <th>Child Class</th>
+                  <th>Relationship</th>
+                </tr>
+              </thead>
+              <tbody ng-repeat="relFrame in parentRelationships" class="relBody">
+                <tr ng-repeat="rel in relFrame" ng-class="{'deletedRow': rel.deleted, 'addedRow': rel.added}">
+                  <td width="20px" ng-if="!rel.deleted && !rel.added && !formDisabled"><i class="fa fa-trash fa-lg" ng-click="updateDelete(rel)"></i></td>
+                  <td width="20px" ng-if="rel.deleted && !formDisabled"><i class="fa fa-undo fa-lg" ng-click="undoLast(rel)"></i></td>
+                  <td width="20px" ng-if="rel.added && !formDisabled"><i class="fa fa-minus-circle fa-lg" ng-click="undoLast(rel)"></i></td>
+                  <td>{{rel.displayValue}}</td>
+                  <td>{{rel.classDisplay}}</td>
+                  <td>{{rel.relName}}</td>
+                </tr>
+              </tbody>
+            </table>
+            <button class="btn btn-lg btn-success marginB10" ng-click="addChildRelationship()" ng-if="editableSelected.editableRelationships.parent[0] && !formDisabled">
+              ${Add Child Relationship}
+            </button>
+          </div>
+        </div>
+        <div class="col-xs-12 col-sm-6">
+          <div class="text-center">
+            <h3 class="display-1">
+              ${Parents of {{ciName}}}
+            </h3>
+            <hr />
+            <table class="table table-responsive table-striped">
+              <thead>
+                <tr>
+                  <th width="20px" ng-if="!formDisabled"></th>
+                  <th>Parent</th>
+                  <th>Parent Class</th>
+                  <th>Relationship</th>
+                </tr>
+              </thead>
+              <tbody ng-repeat="relFrame in childRelationships" class="relBody">
+                <tr ng-repeat="rel in relFrame" ng-class="{'deletedRow': rel.deleted, 'addedRow': rel.added}">
+                  <td width="20px" ng-if="!rel.deleted && !rel.added && !formDisabled"><i class="fa fa-trash fa-lg" ng-click="updateDelete(rel)"></i></td>
+                  <td width="20px" ng-if="rel.deleted && !formDisabled"><i class="fa fa-undo fa-lg" ng-click="undoLast(rel)"></i></td>
+                  <td width="20px" ng-if="rel.added && !formDisabled"><i class="fa fa-minus-circle fa-lg" ng-click="undoLast(rel)"></i></td>
+                  <td>{{rel.displayValue}}</td>
+                  <td>{{rel.classDisplay}}</td>
+                  <td>{{rel.relName}}</td>
+                </tr>
+              </tbody>
+            </table>
+            <button class="btn btn-lg btn-success marginB10" ng-click="addParentRelationship()" ng-if="editableSelected.editableRelationships.child[0] && !formDisabled">
+              ${Add Parent Relationship}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="editorFooter borderTop" ng-if="!formDisabled || (committed && approved == 'requested' && isCurrentUserAnApprover)">
+    <div class="clear-fix buttonPanel">
+      <button class="btn btn-primary btn-lg pull-right" ng-disabled="$root.checkFormForChanges(true)" ng-click="submit(true)" ng-if="!committed">
+        Submit
+      </button>
+      <button class="btn btn-default btn-lg pull-right" ng-disabled="$root.checkFormForChanges(true)" ng-if="!committed" ng-click="submit(false)">
+        Save as Draft
+      </button>
+      <button class="btn btn-danger btn-lg pull-left" ng-click="clearFormAndReset()" ng-if="!committed && !drafted">
+        Restart
+      </button>
+      
+      <button class="btn btn-success btn-lg pull-right" ng-if="committed && approved == 'requested' && isCurrentUserAnApprover" ng-click="approve(true)">
+        Approve
+      </button>
+      <button class="btn btn-danger btn-lg pull-right" ng-if="committed && approved == 'requested' && isCurrentUserAnApprover" ng-click="approve(false)">
+        Reject
+      </button>
+    </div>
+  </div>]]></template>
+    </sp_widget>
+</record_update>

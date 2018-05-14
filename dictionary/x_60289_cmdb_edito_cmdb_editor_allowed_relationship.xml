@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<database>
+    <element label="CMDB Editor Allowed Relationship" max_length="40" name="x_60289_cmdb_edito_cmdb_editor_allowed_relationship" type="collection">
+        <element label="Allowed Relationship Types" max_length="4000" name="allowed_relationship_types" reference="cmdb_rel_type" type="glide_list"/>
+        <element label="CI Classes" max_length="4000" name="ci_classes" reference="sys_db_object" reference_qual="nameSTARTSWITHcmdb_ci^ORsuper_class=54bd39e6b92013006517ce7df7ee46c9^ORsuper_class=0cbd39e6b92013006517ce7df7ee4684^EQ" reference_qual_condition="nameSTARTSWITHcmdb_ci^ORsuper_class=54bd39e6b92013006517ce7df7ee46c9^ORsuper_class=0cbd39e6b92013006517ce7df7ee4684^EQ" type="glide_list"/>
+        <element label="CMDB Editor Configuration" max_length="32" name="cmdb_editor_configuration" reference="x_60289_cmdb_edito_cmdb_editor_configuration" type="reference"/>
+        <element choice="1" label="Relationship to Configuration Entry" mandatory="true" max_length="40" name="relationship_to_configuration_entry" type="string">
+            <choice>
+                <element label="Parent" sequence="0" value="parent"/>
+                <element label="Child" sequence="1" value="child"/>
+            </choice>
+        </element>
+        <index name="index">
+            <element name="cmdb_editor_configuration"/>
+        </index>
+    </element>
+</database>
